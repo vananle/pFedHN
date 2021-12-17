@@ -10,9 +10,9 @@ import torch
 import torch.utils.data
 from tqdm import trange
 
-from .models import CNNHyperPC, CNNTargetPC, LocalLayer
-from .node import BaseNodesForLocal
-from ..utils import get_device, set_logger, set_seed, str2bool, get_dataloader
+from experiments.pfedhn_pc.models import CNNHyperPC, CNNTargetPC, LocalLayer
+from experiments.pfedhn_pc.node import BaseNodesForLocal
+from experiments.utils import get_device, set_logger, set_seed, str2bool, get_dataloader
 
 
 def eval_model(nodes, num_nodes, hnet, net, criteria, device, split, data_global=None):
