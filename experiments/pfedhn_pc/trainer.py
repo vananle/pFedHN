@@ -10,13 +10,13 @@ import torch
 import torch.utils.data
 from tqdm import trange
 
-from experiments.pfedhn_pc.models import CNNHyperPC, CNNTargetPC, LocalLayer
-from experiments.pfedhn_pc.node import BaseNodesForLocal
-from experiments.utils import get_device, set_logger, set_seed, str2bool
+from .models import CNNHyperPC, CNNTargetPC, LocalLayer
+from .node import BaseNodesForLocal
+from ..utils import get_device, set_logger, set_seed, str2bool, get_dataloader
 
 
-def eval_model(nodes, num_nodes, hnet, net, criteria, device, split):
-    curr_results = evaluate(nodes, num_nodes, hnet, net, criteria, device, split=split)
+def eval_model(nodes, num_nodes, hnet, net, criteria, device, split, data_global=None):
+    curr_results = evaluate(nodes, num_nodes, hnet, net, criteria, device, split=split, data_global=data_global)
     total_correct = sum([val['correct'] for val in curr_results.values()])
     total_samples = sum([val['total'] for val in curr_results.values()])
     avg_loss = np.mean([val['loss'] for val in curr_results.values()])
@@ -28,7 +28,7 @@ def eval_model(nodes, num_nodes, hnet, net, criteria, device, split):
 
 
 @torch.no_grad()
-def evaluate(nodes: BaseNodesForLocal, num_nodes, hnet, net, criteria, device, split='test'):
+def evaluate(nodes: BaseNodesForLocal, num_nodes, hnet, net, criteria, device, split='test', data_global=None):
     hnet.eval()
     results = defaultdict(lambda: defaultdict(list))
 
@@ -39,6 +39,8 @@ def evaluate(nodes: BaseNodesForLocal, num_nodes, hnet, net, criteria, device, s
             curr_data = nodes.test_loaders[node_id]
         elif split == 'val':
             curr_data = nodes.val_loaders[node_id]
+        elif split == 'global':
+            curr_data = data_global
         else:
             curr_data = nodes.train_loaders[node_id]
 
@@ -65,7 +67,10 @@ def train(data_name: str, data_path: str, classes_per_node: int, num_nodes: int,
           embed_lr: float, wd: float, inner_wd: float, embed_dim: int, hyper_hid: int,
           n_hidden: int, n_kernels: int, bs: int, device, eval_every: int, save_path: Path,
           ) -> None:
-
+    train_dl_global, test_dl_global, train_ds_global, test_ds_global = get_dataloader('cifar10',
+                                                                                      './data',
+                                                                                      args.batch_size,
+                                                                                      32)
     ###############################
     # init nodes, hnet, local net #
     ###############################
@@ -197,7 +202,7 @@ def train(data_name: str, data_path: str, classes_per_node: int, num_nodes: int,
         if step % eval_every == 0:
             last_eval = step
             step_results, avg_loss, avg_acc, all_acc = eval_model(
-                nodes, num_nodes, hnet, net, criteria, device, split="test"
+                nodes, num_nodes, hnet, net, criteria, device, split="global", data_global=test_dl_global
             )
             logging.info(f"\nStep: {step+1}, AVG Loss: {avg_loss:.4f},  AVG Acc: {avg_acc:.4f}")
 
@@ -270,7 +275,7 @@ if __name__ == '__main__':
     ##################################
     #       Optimization args        #
     ##################################
-    parser.add_argument("--num-steps", type=int, default=5000)
+    parser.add_argument("--num-steps", type=int, default=100)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--inner-steps", type=int, default=50, help="number of inner steps")
     parser.add_argument("--optim", type=str, default='sgd', choices=['adam', 'sgd'], help="learning rate")
