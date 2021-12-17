@@ -161,7 +161,7 @@ def train(data_name: str, data_path: str, classes_per_node: int, num_nodes: int,
 
             batch = next(iter(nodes.train_loaders[node_id]))
             img, label = tuple(t.to(device) for t in batch)
-
+            # print(label)
             net_out = net(img)
             pred = nodes.local_layers[node_id](net_out)
 
