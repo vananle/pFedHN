@@ -10,6 +10,21 @@ import torch
 import torch.utils.data
 from tqdm import trange
 
+import os
+import sys
+
+# getting the name of the directory
+# where the this file is present.
+current = os.path.dirname(os.path.realpath(__file__))
+
+# Getting the parent directory name
+# where the current directory is present.
+parent = os.path.dirname(current)
+
+# adding the parent directory to
+# the sys.path.
+sys.path.append(os.path.dirname(parent))
+
 from experiments.pfedhn_pc.models import CNNHyperPC, CNNTargetPC, LocalLayer
 from experiments.pfedhn_pc.node import BaseNodesForLocal
 from experiments.utils import get_device, set_logger, set_seed, str2bool, get_dataloader
