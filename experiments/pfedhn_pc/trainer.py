@@ -217,7 +217,7 @@ def train(data_name: str, data_path: str, classes_per_node: int, num_nodes: int,
         if step % eval_every == 0:
             last_eval = step
             step_results, avg_loss, avg_acc, all_acc = eval_model(
-                nodes, num_nodes, hnet, net, criteria, device, split="global", data_global=test_dl_global
+                nodes, num_nodes, hnet, net, criteria, device, split="test", data_global=test_dl_global
             )
             logging.info(f"\nStep: {step+1}, AVG Loss: {avg_loss:.4f},  AVG Acc: {avg_acc:.4f}")
 
