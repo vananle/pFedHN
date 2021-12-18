@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.utils.data
 from tqdm import trange
-
+import collections
 import os
 import sys
 
@@ -62,6 +62,7 @@ def evaluate(nodes: BaseNodesForLocal, num_nodes, hnet, net, criteria, device, s
         weights = hnet(torch.tensor([node_id], dtype=torch.long).to(device))
         net.load_state_dict(weights)
 
+        labels = []
         for batch_count, batch in enumerate(curr_data):
             img, label = tuple(t.to(device) for t in batch)
             net_out = net(img)
@@ -69,6 +70,16 @@ def evaluate(nodes: BaseNodesForLocal, num_nodes, hnet, net, criteria, device, s
             running_loss += criteria(pred, label).item()
             running_correct += pred.argmax(1).eq(label).sum().item()
             running_samples += len(label)
+
+            labels.append(label.cpu().detach().numpy().flatten())
+
+        labels = np.concatenate(labels, axis=0)
+        labels = labels.flatten()
+        Classes, counts = np.unique(labels, return_counts=True)
+        print('------------------ Split: {} Node: {}------------------------'.format(split, node_id))
+        print('Total sample test: ', labels.size)
+        print('Classes test: ', Classes)
+        print('Sample per class: ', counts)
 
         results[node_id]['loss'] = running_loss / (batch_count + 1)
         results[node_id]['correct'] = running_correct
@@ -217,7 +228,7 @@ def train(data_name: str, data_path: str, classes_per_node: int, num_nodes: int,
         if step % eval_every == 0:
             last_eval = step
             step_results, avg_loss, avg_acc, all_acc = eval_model(
-                nodes, num_nodes, hnet, net, criteria, device, split="test", data_global=test_dl_global
+                nodes, num_nodes, hnet, net, criteria, device, split="global", data_global=test_dl_global
             )
             logging.info(f"\nStep: {step+1}, AVG Loss: {avg_loss:.4f},  AVG Acc: {avg_acc:.4f}")
 
